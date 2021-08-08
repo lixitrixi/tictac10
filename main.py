@@ -16,23 +16,47 @@ HUMAN = -1
 
 
 # Functions
-def win(state, player): # calculate if a certain player has won
-  pass
+def win(state, player): # return True if player has won
+  return in_a_row(state, player, win_streak)
 
-def gameover(state): # return True if a player has won or the board is full
-  pass
+def gameover(state): # check if player wins or board is full
+  return len(empty_cells(state)) == 0 or win(state, COMP) or win(state, HUMAN)
 
 def in_a_row(state, player, n): # check if a player has (n) in a row
   pass
 
 def evaluate(state): # find a board's utility (desirability)
-  pass
+  utility = 0
+  
+  if win(state, COMP): # if computer wins
+    utility = 10
+  if win(state, HUMAN): # if human wins
+    utility = -10
+  
+  return utility
 
-def make_move(state, pos): # return board with given move made; pos = (x, y)
-  pass
+def empty_cells(state): # return list of empty cells in a board
+  cells = []
 
-def children(state, player): # returns a list of all next possible boards
-  pass
+  for y, row in enumerate(state):
+    for x, cell in enumerate(row):
+      if cell == 0:
+        cells.append([x, y])
+  
+  return cells
+
+def make_move(state, player, x, y): # return board with given move made
+  state[y][x] = player
+  
+  return state
+
+def children(state, player): # return a list of all next possible boards
+  children = []
+
+  for cell in empty_cells(state):
+    children.append(make_move(state, player, cell[0], cell[1]))
+
+  return children
 
 def maximize(state, depth): # maximize computer advantage
   pass
@@ -51,5 +75,4 @@ def render(state):
 
   for i, row in enumerate(state):
     print(f"{i} {' '.join([chars[cell] for cell in row])}")
-
-render(board)
+    # print(f"{i}|{'|'.join([chars[cell] for cell in row])}", end="|\n")
