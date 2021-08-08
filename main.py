@@ -24,6 +24,7 @@ def gameover(state): # check if player wins or board is full
 
 def in_a_row(state, player, n): # check if a player has (n) in a row
   pass
+  # if n < win_streak, then look for (win_streak) cells in a row with either empty or player
 
 def evaluate(state): # find a board's utility (desirability)
   utility = 0
