@@ -118,17 +118,17 @@ def evaluate(state): # find a board's utility (desirability)
   utility = 0
   
   if win(state, COMP): # if computer wins
-    return 10000
+    return 1
   if win(state, HUMAN): # if human wins
-    return -10000
-  if finishable(state, COMP, win_streak) == 1:
-    utility += 2
-  if finishable(state, HUMAN, win_streak) == 1:
-    utility += -2
-  if finishable(state, COMP, win_streak) > 1:
-    utility += 5
-  if finishable(state, HUMAN, win_streak) > 1:
-    utility += -5
+    return -1
+  # if finishable(state, COMP, win_streak) == 1:
+  #   utility += 2
+  # if finishable(state, HUMAN, win_streak) == 1:
+  #   utility += -2
+  # if finishable(state, COMP, win_streak) > 1:
+  #   utility += 5
+  # if finishable(state, HUMAN, win_streak) > 1:
+  #   utility += -5
   
   return utility
 
@@ -208,13 +208,13 @@ def render(state, h_choice, c_choice): # display (and prettify) the board to the
     -1: h_choice
   }
 
-  print(f"+ {'-'*(width*2-1)} +")
+  print(f"Y {'-'*(width*2-1)} +")
 
   for i, row in enumerate(state):
     print(f"{height-i} {' '.join([chars[cell] for cell in row])}", end=" |\n")
     # print(f"{i}|{'|'.join([chars[cell] for cell in row])}", end="|\n")
   
-  print(f"+ {' '.join(map(str, list(range(1, width+1))))} +") # x axis labels
+  print(f"+ {' '.join(map(str, list(range(1, width+1))))} x") # x axis labels
 
 
 def clear(): # clears the console
@@ -226,20 +226,25 @@ def clear(): # clears the console
 
 
 def parse_cords(raw_cords):
-  if len(raw_cords.split(', ')) == 2:
-    return list(map(int, raw_cords.split(', ')))
-  elif len(raw_cords.split(',')) == 2:
-    return list(map(int, raw_cords.split(',')))
-  elif len(raw_cords.split(' ')) == 2:
-    return list(map(int, raw_cords.split(' ')))
-  else:
+  try:
+    if len(raw_cords.split(', ')) == 2:
+      return list(map(int, raw_cords.split(', ')))
+    elif len(raw_cords.split(' ,')) == 2:
+      return list(map(int, raw_cords.split(' ,')))
+    elif len(raw_cords.split(',')) == 2:
+      return list(map(int, raw_cords.split(',')))
+    elif len(raw_cords.split(' ')) == 2:
+      return list(map(int, raw_cords.split(' ')))
+  except Exception:
     return None
 
 
-def valid_move(state, move): # return if given cords are empty
-  x = move[0]
-  y = move[1]
-  return state[y][x] == 0
+def valid_move(state, x, y): # return if given cords are valid and position on board is empty
+  try:
+    return state[y][x] == 0
+  except Exception:
+    print("")
+    return False
 
 
 def human_turn(state, recommend_moves): # takes user input and returns the board with their move made
@@ -247,14 +252,19 @@ def human_turn(state, recommend_moves): # takes user input and returns the board
   if recommend_moves:
     print("Recommending move...")
     recommended = minimize(state)[0]
-    print(f"Recommended move: ({recommended[0]}, {recommended[1]})")
+    print(f"Recommended move: ({height-recommended[0]}, {recommended[1]+1})")
 
-  cords = parse_cords(input("Input coordinates, or enter 'exit' to stop\nMove (x,y): "))
-  while not cords and not valid_move(state, cords):
-    cords = parse_cords(input("Input coordinates, or enter 'exit' to stop\nMove (x,y): "))
-  
-  x = cords[0] - 1
-  y = height - cords[1]
+  cords = None
+  x = None
+  y = None
+
+  while not cords and not valid_move(state, x, y):
+    cords = input("Input coordinates, or enter 'quit' to stop\nMove (x,y): ")
+    if cords.upper() == "QUIT":
+      sys.exit("Bye!")
+    cords = parse_cords(cords)
+    x = cords[0] - 1
+    y = height - cords[1]
   
   return make_move(state, HUMAN, x, y)
 
@@ -287,39 +297,57 @@ def main():
   
   recommend_moves = {'Y':True, 'N':False}[recommend_moves]
 
-  clear()
+  play = True
 
-  render(state, h_choice, c_choice)
-
-  if human_first == 'Y':
-    state = human_turn(state, recommend_moves)
-    clear()
-    render(board, h_choice, c_choice)
-    
-  while not gameover(state):
-    print("Computer turn...")
-    c_move = maximize(state)[0]
-    state = make_move(state, COMP, c_move[0], c_move[1])
-
+  while play:
     clear()
 
-    render(state, h_choice, c_choice)
+    if human_first == 'Y':
+      render(state, h_choice, c_choice)
 
-    if gameover(state):
-      break
+      state = human_turn(state, recommend_moves)
+      
+    while not gameover(state):
+      clear()
+      render(state, h_choice, c_choice)
 
-    state = human_turn(state, recommend_moves)
+      print("Computer turn...")
+      c_move = maximize(state)[0]
+      state = make_move(state, COMP, c_move[0], c_move[1])
 
-    clear()
+      clear()
 
-    render(state, h_choice, c_choice)
-  else:
+      render(state, h_choice, c_choice)
+
+      if gameover(state):
+        break
+
+      state = human_turn(state, recommend_moves)
+
+      clear()
+
+      render(state, h_choice, c_choice)
+
     if win(state, COMP):
       print("Computer wins!")
     if win(state, HUMAN):
       print("You win!")
     if len(empty_cells(state)) == 0:
       print("Draw!")
+    
+    retry = input("Do you want to retry? (Y/N): ").upper()
+    while retry not in ['Y', 'N']:
+      retry = input("Invalid input. (Y/N): ").upper()
+    
+    if retry == 'N':
+      play = False
+      print("Bye!")
+    else:
+      state = board
+
+      human_first = input("Do you want to go first? (Y/N): ").upper()
+      while human_first not in ['Y', 'N']:
+        human_first = input("Invalid input. (Y/N): ").upper()
 
 if __name__ == "__main__":
   main()
