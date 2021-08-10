@@ -8,12 +8,12 @@ import random
 
 
 # Vars
-width, height = 5, 5
+width, height = 3, 3
 board = [ [0 for x in range(width)] for y in range(height) ]
 
-win_streak = 4 # how many pegs in a row to win
+win_streak = 3 # how many pegs in a row to win
 
-search_depth = 4 # how many turns into the future the algorithm will look
+search_depth = 6 # how many turns into the future the algorithm will look
 
 COMP = +1
 HUMAN = -1
@@ -42,7 +42,7 @@ def in_a_row(state, player, n): # return if player has (n) in a row
   for y in range(height-n-1, width):
     for x in range(width-n+1):
       try:
-        if sum([state[y-i][x+i] for i in range(n)]) == player * n:
+        if sum([state[y-i][x+i] for i in range(n) if y-i >= 0]) == player * n:
           return True
       except IndexError:
         continue
@@ -118,9 +118,9 @@ def evaluate(state): # find a board's utility (desirability)
   utility = 0
   
   if win(state, COMP): # if computer wins
-    return 1000
+    return 10000
   if win(state, HUMAN): # if human wins
-    return -1000
+    return -10000
   if finishable(state, COMP, win_streak) == 1:
     utility += 2
   if finishable(state, HUMAN, win_streak) == 1:
@@ -196,9 +196,9 @@ def minimize(state, depth=0, this_move=None): # finds move with minimum utility
         best_move = check_move
   
   if this_move == None:
-    return best_move, (min_util+evaluate(state))*(0.95**depth)
+    return best_move, (min_util-evaluate(state))*(0.95**depth)
   else:
-    return this_move, (min_util+evaluate(state))*(0.95**depth)
+    return this_move, (min_util-evaluate(state))*(0.95**depth)
 
 
 def render(state, h_choice, c_choice): # display (and prettify) the board to the console
@@ -249,9 +249,9 @@ def human_turn(state, recommend_moves): # takes user input and returns the board
     recommended = minimize(state)[0]
     print(f"Recommended move: ({recommended[0]}, {recommended[1]})")
 
-  cords = parse_cords(input("Input coordinates: "))
+  cords = parse_cords(input("Input coordinates, or enter 'exit' to stop\nMove (x,y): "))
   while not cords and not valid_move(state, cords):
-    cords = parse_cords(input("Input coordinates: "))
+    cords = parse_cords(input("Input coordinates, or enter 'exit' to stop\nMove (x,y): "))
   
   x = cords[0] - 1
   y = height - cords[1]
@@ -313,13 +313,13 @@ def main():
     clear()
 
     render(state, h_choice, c_choice)
-  
-  if win(state, COMP):
-    print("Computer wins!")
-  if win(state, HUMAN):
-    print("You win!")
-  if len(empty_cells(state)) == 0:
-    print("Draw!")
+  else:
+    if win(state, COMP):
+      print("Computer wins!")
+    if win(state, HUMAN):
+      print("You win!")
+    if len(empty_cells(state)) == 0:
+      print("Draw!")
 
 if __name__ == "__main__":
   main()
