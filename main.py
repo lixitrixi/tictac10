@@ -1,16 +1,18 @@
 # Imports
 import sys
-import copy
-from math import inf as infinity
+from copy import deepcopy
+import math
+import platform
+from os import system
 
 
 # Vars
-width, height = 10, 10
+width, height = 3, 3
 board = [ [0 for x in range(width)] for y in range(height) ]
 
-win_streak = 5 # how many pegs in a row to win
+win_streak = 3 # how many pegs in a row to win
 
-search_depth = 2 # how many turns into the future the algorithm will look
+search_depth = 4 # how many turns into the future the algorithm will look
 
 COMP = +1
 HUMAN = -1
@@ -115,17 +117,17 @@ def evaluate(state): # find a board's utility (desirability)
   if win(state, HUMAN): # if human wins
     return -10
   if finishable(state, COMP, win_streak) == 1:
-    utility += 0.2
+    utility += 2
   if finishable(state, HUMAN, win_streak) == 1:
-    utility -= 0.2
+    utility += -2
   if finishable(state, COMP, win_streak) > 1:
     utility += 5
   if finishable(state, HUMAN, win_streak) > 1:
-    utility -= -5
+    utility += -5
   
   return utility
 
-def empty_cells(state): # return list of empty cells in a board
+def empty_cells(state): # return list of empty cells in a given board
   cell_cords = []
 
   for y, row in enumerate(state):
@@ -135,51 +137,52 @@ def empty_cells(state): # return list of empty cells in a board
   
   return cell_cords # list of [x, y] values
 
+def get_moves(state): # returns a list of possible move cords
+  return empty_cells(state) # I know this just uses the above function but the name makes more sense like this
+
 def make_move(state, player, x, y): # return board with given move made
-  state_copy = copy.deepcopy(state)
+  state_copy = deepcopy(state)
   state_copy[y][x] = player
 
   return state_copy
 
-def children(state, player): # return a list of all next possible board configs
-  child_list = []
-
-  for cell in empty_cells(board):
-    child_list.append(make_move(state, player, cell[0], cell[1]))
+def maximize(state, depth=0, this_move=None): # finds move with maximum utility (score)
+  if depth == search_depth or gameover(state):
+    return this_move, evaluate(state)
   
-  return child_list
+  max_util = -math.inf
+  best_move = None
 
-def maximize(state, player, depth): # maximize computer advantage; returns a move & its utility
-  if gameover(state) or depth >= search_depth:
-    return state, evaluate(state)
+  for next_move in get_moves(state):
+    child_state = make_move(state, COMP, next_move[0], next_move[1])
+    check_move, check_util = minimize(child_state, depth+1, next_move)
+    if check_util > max_util:
+      best_move = check_move
+      max_util = check_util
   
-  best_state = None
-  maximum_utility = -infinity
+  if this_move == None:
+    return best_move, max_util
+  else:
+    return this_move, max_util
 
-  for child_state in children(state, player):
-    check_state, check_utility = minimize(child_state, -player, depth+1)
-
-    if check_utility-(depth*0.2) > maximum_utility:
-      best_state = check_state
-      maximum_utility = check_utility
+def minimize(state, depth=0, this_move=None): # finds move with minimum utility
+  if depth == search_depth or gameover(state):
+    return this_move, evaluate(state)
   
-  return best_state, maximum_utility
+  min_util = math.inf
+  best_move = None
 
-def minimize(state, player, depth): # minimize human advantage
-  if gameover(state) or depth >= search_depth:
-    return state, evaluate(state)
+  for next_move in get_moves(state):
+    child_state = make_move(state, HUMAN, next_move[0], next_move[1])
+    check_move, check_util = maximize(child_state, depth+1, next_move)
+    if check_util < min_util:
+      best_move = check_move
+      min_util = check_util
   
-  best_state = None
-  minimum_utility = infinity
-
-  for child_state in children(state, player):
-    check_state, check_utility = maximize(child_state, -player, depth+1)
-
-    if check_utility+(depth*0.2) < minimum_utility:
-      best_state = check_state
-      minimum_utility = check_utility
-  
-  return best_state, minimum_utility
+  if this_move == None:
+    return best_move, min_util
+  else:
+    return this_move, min_util
 
 def render(state, h_choice, c_choice): # display (and prettify) the board to the console
   chars = {
@@ -188,68 +191,114 @@ def render(state, h_choice, c_choice): # display (and prettify) the board to the
     -1: h_choice
   }
 
-  print('-'*(width*2+15))
-
-  print(f"+ {' '.join(map(str, list(range(width))))} +") # top number labels
-
-  for i, row in enumerate(state):
-    print(f"{i} {' '.join([chars[cell] for cell in row])}", end=" |\n")
-    # print(f"{i}|{'|'.join([chars[cell] for cell in row])}", end="|\n")
-  
   print(f"+ {'-'*(width*2-1)} +")
 
+  for i, row in enumerate(state):
+    print(f"{height-i} {' '.join([chars[cell] for cell in row])}", end=" |\n")
+    # print(f"{i}|{'|'.join([chars[cell] for cell in row])}", end="|\n")
+  
+  print(f"+ {' '.join(map(str, list(range(1, width+1))))} +") # x axis labels
+
+def clear(): # clears the console
+  # os_name = platform.system().lower()
+  # if 'windows' in os_name:
+  #     system('cls')
+  # else:
+  #     system('clear')
+  pass
+
 def parse_cords(raw_cords):
-  cords = raw_cords.split(',')
-  return int(cords[0]), int(cords[1])
+  if len(raw_cords.split(', ')) == 2:
+    return list(map(int, raw_cords.split(', ')))
+  elif len(raw_cords.split(',')) == 2:
+    return list(map(int, raw_cords.split(',')))
+  elif len(raw_cords.split(' ')) == 2:
+    return list(map(int, raw_cords.split(' ')))
+  else:
+    return None
+
+def valid_move(state, move): # return if given cords are empty
+  x = move[0]
+  y = move[1]
+  return state[y][x] == 0
+
+def human_turn(state, recommend_moves): # takes user input and returns the board with their move made
+  print("Your turn!")
+  if recommend_moves:
+    print("Recommending move...")
+    recommended = minimize(state)[0]
+    print(f"Recommended move: ({recommended[0]}, {recommended[1]})")
+
+  cords = parse_cords(input("Input coordinates: "))
+  while not cords and not valid_move(state, cords):
+    cords = parse_cords(input("Input coordinates: "))
+  
+  x = cords[0] - 1
+  y = height - cords[1]
+  
+  return make_move(state, HUMAN, x, y)
 
 def main():
+  clear()
   print("TicTac10")
+  print(f"Size: {width}x{height}")
   print(f"Pegs in a row to win: {win_streak}")
   print(f"Search depth: {search_depth}")
 
-  h_choice = None
-  c_choice = None
-  human_first = None
-  state = board
-  
-  while h_choice not in ['X', 'O']: # human chooses X or O
-    h_choice = input("Choose X or O: ").upper()
-  
-  if h_choice == "O": # set computer to other char
-    c_choice = "X"
-  else:
-    c_choice = "O"
-  
+  state = deepcopy(board)
+
+  human_first = input("Do you want to go first? (Y/N): ").upper()
   while human_first not in ['Y', 'N']:
-    human_first = input("Do you want to go first? (Y/N): ").upper()
+    human_first = input("Invalid input. (Y/N): ").upper()
   
+  h_choice = input("Choose X or O: ").upper()
+  while h_choice not in ['X', 'O']:
+    h_choice = input("Invalid input. X/O: ").upper()
+
+  if h_choice == 'X': # set computer to opposite peg
+    c_choice = 'O'
+  else:
+    c_choice = 'X'
+
+  recommend_moves = input("Would you like me to recommend moves? (Y/N): ").upper()
+  while recommend_moves not in ['Y', 'N']:
+    recommend_moves = input("Invalid input. (Y/N): ").upper()
+  
+  recommend_moves = {'Y':True, 'N':False}[recommend_moves]
+
+  clear()
+
   render(state, h_choice, c_choice)
 
-  if human_first == "Y":
-    print("Your turn!")
-    x, y = parse_cords(input("Input x,y: "))
-    state = make_move(state, HUMAN, x, y)
-    render(state, h_choice, c_choice)
-  
-  while not gameover(state): # main game loop
+  if human_first == 'Y':
+    state = human_turn(state, recommend_moves)
+    clear()
+    render(board, h_choice, c_choice)
+    
+  while not gameover(state):
     print("Computer turn...")
-    state = maximize(state, COMP, 0)[0]
+    c_move = maximize(state)[0]
+    state = make_move(state, COMP, c_move[0], c_move[1])
+
+    clear()
+
     render(state, h_choice, c_choice)
 
-    if gameover(state): break
+    if gameover(state):
+      break
 
-    print("Your turn!")
-    x, y = parse_cords(input("Input x,y: "))
-    state = make_move(state, HUMAN, x, y)
+    state = human_turn(state, recommend_moves)
+
+    clear()
+
     render(state, h_choice, c_choice)
   
+  if win(state, COMP):
+    print("Computer wins!")
+  if win(state, HUMAN):
+    print("You win!")
   if len(empty_cells(state)) == 0:
     print("Draw!")
-  elif win(state, COMP):
-    print("Computer won!")
-  elif win(state, HUMAN):
-    print("You won!")
-
 
 if __name__ == "__main__":
   main()
