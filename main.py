@@ -4,13 +4,14 @@ from copy import deepcopy
 import math
 import platform
 from os import system
+import random
 
 
 # Vars
-width, height = 3, 3
+width, height = 5, 5
 board = [ [0 for x in range(width)] for y in range(height) ]
 
-win_streak = 3 # how many pegs in a row to win
+win_streak = 4 # how many pegs in a row to win
 
 search_depth = 4 # how many turns into the future the algorithm will look
 
@@ -22,8 +23,10 @@ HUMAN = -1
 def win(state, player): # return True if player has won
   return in_a_row(state, player, win_streak)
 
+
 def gameover(state): # check if player wins or board is full
   return len(empty_cells(state)) == 0 or win(state, COMP) or win(state, HUMAN)
+
 
 def in_a_row(state, player, n): # return if player has (n) in a row
   # check top-left to bottom-right diagonals
@@ -64,6 +67,7 @@ def in_a_row(state, player, n): # return if player has (n) in a row
   
   return False
   
+
 def finishable(state, player, n): # return number of rows of (n) that can be completed with one more peg
   finishable_streaks = 0
 
@@ -109,13 +113,14 @@ def finishable(state, player, n): # return number of rows of (n) that can be com
   
   return finishable_streaks
 
+
 def evaluate(state): # find a board's utility (desirability)
   utility = 0
   
   if win(state, COMP): # if computer wins
-    return 10
+    return 1000
   if win(state, HUMAN): # if human wins
-    return -10
+    return -1000
   if finishable(state, COMP, win_streak) == 1:
     utility += 2
   if finishable(state, HUMAN, win_streak) == 1:
@@ -127,6 +132,7 @@ def evaluate(state): # find a board's utility (desirability)
   
   return utility
 
+
 def empty_cells(state): # return list of empty cells in a given board
   cell_cords = []
 
@@ -137,8 +143,10 @@ def empty_cells(state): # return list of empty cells in a given board
   
   return cell_cords # list of [x, y] values
 
+
 def get_moves(state): # returns a list of possible move cords
   return empty_cells(state) # I know this just uses the above function but the name makes more sense like this
+
 
 def make_move(state, player, x, y): # return board with given move made
   state_copy = deepcopy(state)
@@ -146,9 +154,10 @@ def make_move(state, player, x, y): # return board with given move made
 
   return state_copy
 
+
 def maximize(state, depth=0, this_move=None): # finds move with maximum utility (score)
   if depth == search_depth or gameover(state):
-    return this_move, evaluate(state)
+    return this_move, evaluate(state)*(0.95**depth)
   
   max_util = -math.inf
   best_move = None
@@ -159,15 +168,19 @@ def maximize(state, depth=0, this_move=None): # finds move with maximum utility 
     if check_util > max_util:
       best_move = check_move
       max_util = check_util
+    if check_util == max_util:
+      if random.random() < 0.2:
+        best_move = check_move
   
   if this_move == None:
-    return best_move, max_util
+    return best_move, (max_util+evaluate(state))*(0.95**depth)
   else:
-    return this_move, max_util
+    return this_move, (max_util+evaluate(state))*(0.95**depth)
+
 
 def minimize(state, depth=0, this_move=None): # finds move with minimum utility
   if depth == search_depth or gameover(state):
-    return this_move, evaluate(state)
+    return this_move, evaluate(state)*(0.95**depth)
   
   min_util = math.inf
   best_move = None
@@ -178,11 +191,15 @@ def minimize(state, depth=0, this_move=None): # finds move with minimum utility
     if check_util < min_util:
       best_move = check_move
       min_util = check_util
+    if check_util == min_util:
+      if random.random() < 0.2:
+        best_move = check_move
   
   if this_move == None:
-    return best_move, min_util
+    return best_move, (min_util+evaluate(state))*(0.95**depth)
   else:
-    return this_move, min_util
+    return this_move, (min_util+evaluate(state))*(0.95**depth)
+
 
 def render(state, h_choice, c_choice): # display (and prettify) the board to the console
   chars = {
@@ -199,13 +216,14 @@ def render(state, h_choice, c_choice): # display (and prettify) the board to the
   
   print(f"+ {' '.join(map(str, list(range(1, width+1))))} +") # x axis labels
 
+
 def clear(): # clears the console
-  # os_name = platform.system().lower()
-  # if 'windows' in os_name:
-  #     system('cls')
-  # else:
-  #     system('clear')
-  pass
+  os_name = platform.system().lower()
+  if 'windows' in os_name:
+      system('cls')
+  else:
+      system('clear')
+
 
 def parse_cords(raw_cords):
   if len(raw_cords.split(', ')) == 2:
@@ -217,10 +235,12 @@ def parse_cords(raw_cords):
   else:
     return None
 
+
 def valid_move(state, move): # return if given cords are empty
   x = move[0]
   y = move[1]
   return state[y][x] == 0
+
 
 def human_turn(state, recommend_moves): # takes user input and returns the board with their move made
   print("Your turn!")
@@ -237,6 +257,7 @@ def human_turn(state, recommend_moves): # takes user input and returns the board
   y = height - cords[1]
   
   return make_move(state, HUMAN, x, y)
+
 
 def main():
   clear()
