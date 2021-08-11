@@ -5,10 +5,11 @@ import math
 import platform
 from os import system
 import random
+import string
 
 
 # Vars
-width, height = 3, 3
+width, height = 4, 4 # height can not be more than 26
 board = [ [0 for x in range(width)] for y in range(height) ]
 
 win_streak = 3 # how many pegs in a row to win
@@ -17,6 +18,8 @@ search_depth = 6 # how many turns into the future the algorithm will look
 
 COMP = +1
 HUMAN = -1
+
+alphabet = list(string.ascii_uppercase)
 
 
 # Functions
@@ -201,20 +204,18 @@ def minimize(state, depth=0, this_move=None): # finds move with minimum utility
     return this_move, (min_util-evaluate(state))*(0.95**depth)
 
 
-def render(state, h_choice, c_choice): # display (and prettify) the board to the console
+def render(state, h_choice="X", c_choice="O"): # display (and prettify) the board to the console
   chars = {
     0: " ",
     +1: c_choice,
     -1: h_choice
   }
-
-  print(f"Y {'-'*(width*2-1)} +")
+  print("  " + '   '.join(map(str, list(range(1, width+1))))) # x axis labels
 
   for i, row in enumerate(state):
-    print(f"{height-i} {' '.join([chars[cell] for cell in row])}", end=" |\n")
-    # print(f"{i}|{'|'.join([chars[cell] for cell in row])}", end="|\n")
-  
-  print(f"+ {' '.join(map(str, list(range(1, width+1))))} x") # x axis labels
+    print(f"{alphabet[i]} {' | '.join([chars[cell] for cell in row])}")
+    if i+1 < height:
+      print("  " + '-'*(width*4-3))
 
 
 def clear(): # clears the console
@@ -227,23 +228,31 @@ def clear(): # clears the console
 
 def parse_cords(raw_cords):
   try:
-    if len(raw_cords.split(', ')) == 2:
-      return list(map(int, raw_cords.split(', ')))
-    elif len(raw_cords.split(' ,')) == 2:
-      return list(map(int, raw_cords.split(' ,')))
-    elif len(raw_cords.split(',')) == 2:
-      return list(map(int, raw_cords.split(',')))
-    elif len(raw_cords.split(' ')) == 2:
-      return list(map(int, raw_cords.split(' ')))
+    raw_cords = raw_cords.upper()
+    if raw_cords[0].isalpha() and raw_cords[1:].isdigit():
+      return int(raw_cords[1:])-1, alphabet.index(raw_cords[0])
+    elif raw_cords[:-1].isdigit() and raw_cords[-1].isalpha():
+      return int(raw_cords[:-1])-1, alphabet.index(raw_cords[-1])
+    else:
+      print("Invalid syntax! Example: D3")
+      return None
   except Exception:
+    print("Invalid syntax! Example: D3")
     return None
 
 
 def valid_move(state, x, y): # return if given cords are valid and position on board is empty
   try:
-    return state[y][x] == 0
+    if x in range(width) and y in range(height):
+      if state[y][x] == 0:
+        return True
+      else:
+        print("Given position is occupied!")
+        return False
+    else:
+      print("Move is off the board!")
+      return False
   except Exception:
-    print("")
     return False
 
 
@@ -254,19 +263,15 @@ def human_turn(state, recommend_moves): # takes user input and returns the board
     recommended = minimize(state)[0]
     print(f"Recommended move: ({height-recommended[0]}, {recommended[1]+1})")
 
-  cords = None
-  x = None
-  y = None
+  cords = parse_cords(input("Enter cell coordinates, or type 'quit' to exit.\nMove: "))
 
-  while not cords and not valid_move(state, x, y):
-    cords = input("Input coordinates, or enter 'quit' to stop\nMove (x,y): ")
+  while not cords or not valid_move(state, cords[0], cords[1]):
+    cords = input("Input move: ")
     if cords.upper() == "QUIT":
       sys.exit("Bye!")
     cords = parse_cords(cords)
-    x = cords[0] - 1
-    y = height - cords[1]
   
-  return make_move(state, HUMAN, x, y)
+  return make_move(state, HUMAN, cords[0], cords[1])
 
 
 def main():
@@ -291,11 +296,11 @@ def main():
   else:
     c_choice = 'X'
 
-  recommend_moves = input("Would you like me to recommend moves? (Y/N): ").upper()
-  while recommend_moves not in ['Y', 'N']:
-    recommend_moves = input("Invalid input. (Y/N): ").upper()
-  
-  recommend_moves = {'Y':True, 'N':False}[recommend_moves]
+  recommend_moves = False
+  # recommend_moves = input("Would you like me to recommend moves? (Y/N): ").upper()
+  # while recommend_moves not in ['Y', 'N']:
+  #   recommend_moves = input("Invalid input. (Y/N): ").upper()
+  # recommend_moves = {'Y':True, 'N':False}[recommend_moves]
 
   play = True
 
@@ -349,5 +354,14 @@ def main():
       while human_first not in ['Y', 'N']:
         human_first = input("Invalid input. (Y/N): ").upper()
 
-if __name__ == "__main__":
-  main()
+# if __name__ == "__main__":
+#   main()
+
+while True:
+  render(board)
+
+  board = human_turn(board, False)
+
+  render(board)
+
+  print(None in range(10))
