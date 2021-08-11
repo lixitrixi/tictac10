@@ -354,14 +354,5 @@ def main():
       while human_first not in ['Y', 'N']:
         human_first = input("Invalid input. (Y/N): ").upper()
 
-# if __name__ == "__main__":
-#   main()
-
-while True:
-  render(board)
-
-  board = human_turn(board, False)
-
-  render(board)
-
-  print(None in range(10))
+if __name__ == "__main__":
+  main()
