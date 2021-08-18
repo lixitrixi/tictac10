@@ -43,27 +43,27 @@ class BotPlayer():
         if state.gameover() or depth == self.search_depth:
             return {'move': None, 'score': state.evaluate(self.player)}
 
-        if depth == 0:
-            moves = []
-            best_score = -math.inf
-            for move in state.possible_moves():
-                state.set_move(move, self.player)
-                check = self.minimax(state, depth+1, alpha, beta, False)
+        # if depth == 0:
+        #     moves = []
+        #     best_score = -math.inf
+        #     for move in state.possible_moves():
+        #         state.set_move(move, self.player)
+        #         check = self.minimax(state, depth+1, alpha, beta, False)
 
-                state.set_move(move, ' ') # undo move
-                check['move'] = move # attribute move to its resulting board state
+        #         state.set_move(move, ' ') # undo move
+        #         check['move'] = move # attribute move to its resulting board state
 
-                if check['score'] > best_score:
-                    moves = []
-                    best_score = check['score']
+        #         if check['score'] > best_score:
+        #             moves = []
+        #             best_score = check['score']
                 
-                moves.append(check)
+        #         moves.append(check)
                 
-                alpha = max(alpha, best_score)
-                if best_score >= beta:
-                    break
+        #         alpha = max(alpha, best_score)
+        #         if best_score >= beta:
+        #             break
             
-            return random.choice(moves)
+        #     return random.choice(moves)
         
         if maximizing:
             best = {'move': None, 'score': -math.inf}

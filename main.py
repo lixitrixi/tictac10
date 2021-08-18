@@ -1,9 +1,10 @@
 # Imports
 from board import Board
 import player
+from os import system
 
 def main():
-    board = Board(3, 3, 3)
+    board = Board(5, 5, 5)
 
     playerX = player.HumanPlayer()
     playerO = player.BotPlayer('O', 6)
@@ -12,12 +13,14 @@ def main():
         board.render()
         moveX = playerX.get_move(board)
         board.set_move(moveX, 'X')
+        system('clear')
 
         if board.gameover(): break
 
         board.render()
         moveO = playerO.get_move(board)
         board.set_move(moveO, 'O')
+        system('clear')
     
     board.render()
     if len(board.possible_moves()) == 0:
@@ -26,7 +29,5 @@ def main():
         print('Player X has won!')
     elif board.iswin('O'):
         print('Player O has won!')
-
-    print(board.board)
 
 main()
