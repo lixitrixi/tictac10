@@ -26,11 +26,8 @@ class HumanPlayer():
 
 
 class RandomPlayer():
-    def __init__(self, char):
-        self.char = char
-
     def get_move(self, state):
-        return random.choice(state.possible_moves)
+        return random.choice(state.possible_moves())
         
 
 class BotPlayer():
@@ -45,6 +42,28 @@ class BotPlayer():
     def minimax(self, state, depth, alpha, beta, maximizing): # returns optimal move
         if state.gameover() or depth == self.search_depth:
             return {'move': None, 'score': state.evaluate(self.player)}
+
+        if depth == 0:
+            moves = []
+            best_score = -math.inf
+            for move in state.possible_moves():
+                state.set_move(move, self.player)
+                check = self.minimax(state, depth+1, alpha, beta, False)
+
+                state.set_move(move, ' ') # undo move
+                check['move'] = move # attribute move to its resulting board state
+
+                if check['score'] > best_score:
+                    moves = []
+                    best_score = check['score']
+                
+                moves.append(check)
+                
+                alpha = max(alpha, best_score)
+                if best_score >= beta:
+                    break
+            
+            return random.choice(moves)
         
         if maximizing:
             best = {'move': None, 'score': -math.inf}

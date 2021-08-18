@@ -3,10 +3,10 @@ from board import Board
 import player
 
 def main():
-    board = Board(10, 10, 5)
+    board = Board(3, 3, 3)
 
-    playerX = player.BotPlayer('X', 3)
-    playerO = player.BotPlayer('O', 3)
+    playerX = player.HumanPlayer()
+    playerO = player.BotPlayer('O', 6)
     
     while not board.gameover():
         board.render()
@@ -27,15 +27,6 @@ def main():
     elif board.iswin('O'):
         print('Player O has won!')
 
+    print(board.board)
+
 main()
-# board = Board(3, 3, 3)
-
-# playerX = player.HumanPlayer()
-# playerO = player.BotPlayer('O', 5)
-
-# board.set_move((2,2), 'X')
-# board.set_move((2,1), 'X')
-
-# board.render()
-
-# print(playerO.get_move(board))
