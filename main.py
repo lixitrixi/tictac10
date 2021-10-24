@@ -22,11 +22,11 @@ def main():
         print(f"Computer Move: {moveO}")
     
     board.render()
-    if len(board.possible_moves()) == 0:
-        print('Draw!')
-    elif board.iswin('X'):
+    if board.iswin('X'):
         print('Player X has won!')
     elif board.iswin('O'):
         print('Player O has won!')
+    elif len(board.possible_moves()) == 0:
+        print('Draw!')
 
 main()
