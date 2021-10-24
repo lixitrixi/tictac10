@@ -4,7 +4,7 @@ import player
 from os import system
 
 def main():
-    board = Board(5, 5, 5)
+    board = Board(3, 3, 3)
 
     playerX = player.HumanPlayer()
     playerO = player.BotPlayer('O', 6)
@@ -13,14 +13,13 @@ def main():
         board.render()
         moveX = playerX.get_move(board)
         board.set_move(moveX, 'X')
-        system('clear')
 
         if board.gameover(): break
 
         board.render()
         moveO = playerO.get_move(board)
         board.set_move(moveO, 'O')
-        system('clear')
+        print(f"Computer Move: {moveO}")
     
     board.render()
     if len(board.possible_moves()) == 0:
